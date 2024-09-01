@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Reset some common styling for all elements */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Set up basic styles for html and body */
+html,
+body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    /* Replace with your preferred font */
+    font-size: 16px;
+    /* Base font size */
+    line-height: 1.5;
+    background-color: #000;
+    /* Set your preferred background color */
+    color: #fff;
+    /* Set your preferred text color */
+    -webkit-font-smoothing: antialiased;
+    /* Improve text rendering on Webkit-based browsers */
+    -moz-osx-font-smoothing: grayscale;
+    /* Improve text rendering on Firefox */
+}
