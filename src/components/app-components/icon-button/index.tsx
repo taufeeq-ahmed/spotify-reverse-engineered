@@ -19,6 +19,8 @@ function IconButton({
     tooltipContent,
     buttonClassName,
     iconClassName,
+    disabled,
+    ...props
 }: IconButtonProps) {
     return (
         <TooltipProvider>
@@ -27,8 +29,10 @@ function IconButton({
                     <Button
                         className={twMerge(
                             'bg-transparent group enabled:hover:bg-transparent hover:scale-110 p-2',
+                            disabled && 'cursor-not-allowed opacity-40',
                             buttonClassName
                         )}
+                        {...props}
                     >
                         <Icon
                             className={twMerge(

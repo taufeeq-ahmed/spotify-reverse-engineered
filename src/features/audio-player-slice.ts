@@ -1,6 +1,7 @@
 import { useSelector, useDispatch, TypedUseSelectorHook } from 'react-redux';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '@/store/index';
+import { useCallback, useEffect, useRef } from 'react';
 
 const useTypedSelector: TypedUseSelectorHook<RootState> = useSelector;
 
@@ -8,6 +9,7 @@ interface Track {
     title: string;
     thumbnail?: string;
     src: string;
+    artist: string;
 }
 
 interface AudioPlayerState {
@@ -29,16 +31,23 @@ const audioPlayerSlice = createSlice({
     initialState: audioPlayerInitState,
     reducers: {
         setTrackList: (state, action: PayloadAction<Track[]>) => {
-            state.trackList = action.payload;
-            state.currentIdx = 0;
-            state.currentTrack = state.trackList[0] || null;
-            state.isPlaying = false;
+            if (action.payload !== state.trackList) {
+                state.trackList = action.payload;
+                state.currentIdx = 0;
+                state.currentTrack = state.trackList[0] || null;
+            }
         },
         gotoNextTrack: state => {
-            state.currentTrack = state.trackList[++state.currentIdx];
+            if (state.currentIdx < state.trackList.length - 1) {
+                state.currentIdx += 1;
+                state.currentTrack = state.trackList[state.currentIdx];
+            }
         },
         gotoPreviousTrack: state => {
-            state.currentTrack = state.trackList[--state.currentIdx];
+            if (state.currentIdx > 0) {
+                state.currentIdx--;
+                state.currentTrack = state.trackList[state.currentIdx];
+            }
         },
         playTrack: state => {
             state.isPlaying = true;
@@ -65,7 +74,9 @@ export default audioPLayerReducer;
 export const useAudioPlayer = () => {
     const dispatch = useDispatch();
 
-    const trackList = useTypedSelector(state => state.audioPlayer.trackList);
+    const playlist = useTypedSelector(state => state.audioPlayer.trackList);
+
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const currentTrack = useTypedSelector(
         state => state.audioPlayer.currentTrack
@@ -75,21 +86,39 @@ export const useAudioPlayer = () => {
 
     const isPlaying = useTypedSelector(state => state.audioPlayer.isPlaying);
 
+    const isNextTrackAvailable = currentIdx < playlist.length - 1;
+
+    const isPreviousTrackAvailable = currentIdx > 0;
+
+    // Play or pause the audio whenever isPlaying state changes
+    useEffect(() => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.play();
+            } else {
+                audioRef.current.pause();
+            }
+        }
+    }, [isPlaying, currentTrack]);
+
     const playNextTrack = () => {
-        if (currentIdx < trackList.length - 1) {
+        if (isNextTrackAvailable) {
             dispatch(gotoNextTrack());
         }
     };
 
     const playPreviousTrack = () => {
-        if (currentIdx > 0) {
+        if (isPreviousTrackAvailable) {
             dispatch(gotoPreviousTrack());
         }
     };
 
-    const updateTrackList = (tracks: Track[]) => {
-        dispatch(setTrackList(tracks));
-    };
+    const setPlayList = useCallback(
+        (tracks: Track[]) => {
+            dispatch(setTrackList(tracks));
+        },
+        [dispatch]
+    );
 
     const play = () => {
         dispatch(playTrack());
@@ -100,14 +129,17 @@ export const useAudioPlayer = () => {
     };
 
     return {
-        trackList,
+        playlist,
         currentTrack,
         currentIdx,
         playNextTrack,
         playPreviousTrack,
-        updateTrackList,
+        setPlayList,
         isPlaying,
         play,
         pause,
+        audioRef,
+        isNextTrackAvailable,
+        isPreviousTrackAvailable,
     };
 };
