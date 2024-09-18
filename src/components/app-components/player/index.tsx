@@ -6,7 +6,7 @@ function Player() {
         'https://mainbalti.s3.ap-south-1.amazonaws.com/image_movies/7200/435949125.jpg';
 
     return (
-        <div className="player h-[72px]  fixed bottom-2 left-0 w-full p-4 flex gap-2">
+        <div className="player h-[82px]  fixed bottom-2 left-0 w-full p-4 flex gap-2">
             <div className="track-details flex gap-4 justify-start items-center w-1/3">
                 <img
                     src={imageSource}
