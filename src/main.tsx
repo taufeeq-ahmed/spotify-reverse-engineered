@@ -8,8 +8,12 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 
+import { Provider } from 'react-redux';
+
 // Create a new router instance
 const router = createRouter({ routeTree });
+
+import store from '@/store';
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
@@ -24,7 +28,9 @@ if (!rootElement.innerHTML) {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
         <StrictMode>
-            <RouterProvider router={router} />
+            <Provider store={store}>
+                <RouterProvider router={router} />
+            </Provider>
         </StrictMode>
     );
 }
