@@ -21,7 +21,7 @@ function Player() {
             <div className="player-controls w-[30%]">
                 <PlayerControls />
             </div>
-            {currentTrack && <audio ref={audioRef} src={currentTrack?.src} />}
+            <audio ref={audioRef} src={currentTrack?.src} />
         </div>
     );
 }

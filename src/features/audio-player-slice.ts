@@ -12,6 +12,12 @@ interface Track {
     artist: string;
 }
 
+interface ProgressDetails {
+    currentTime: number; // current play time in seconds
+    totalDuration: number; // total duration in seconds
+    progressLevel: number; // progress as a percentage
+}
+
 interface AudioPlayerState {
     trackList: Track[];
     shuffledTrackList: Track[];
@@ -20,6 +26,7 @@ interface AudioPlayerState {
     isPlaying: boolean;
     isShuffling: boolean;
     loopMode: 'off' | 'track' | 'playlist'; // New loop mode state
+    progressDetails: ProgressDetails;
 }
 
 const audioPlayerInitState: AudioPlayerState = {
@@ -30,6 +37,11 @@ const audioPlayerInitState: AudioPlayerState = {
     isPlaying: false,
     isShuffling: false,
     loopMode: 'off', // Initialize loop mode as 'off'
+    progressDetails: {
+        currentTime: 0,
+        totalDuration: 0,
+        progressLevel: 0,
+    },
 };
 
 // Function to shuffle an array
@@ -95,6 +107,9 @@ const audioPlayerSlice = createSlice({
         ) => {
             state.loopMode = action.payload;
         },
+        updateProgress: (state, action: PayloadAction<ProgressDetails>) => {
+            state.progressDetails = action.payload;
+        },
     },
 });
 
@@ -107,6 +122,7 @@ export const {
     activateShuffle,
     deactivateShuffle,
     setLoopMode,
+    updateProgress,
 } = audioPlayerSlice.actions;
 
 const audioPLayerReducer = audioPlayerSlice.reducer;
@@ -140,6 +156,10 @@ export const useAudioPlayer = () => {
 
     const isPreviousTrackAvailable = loopMode === 'playlist' || currentIdx > 0;
 
+    const progressDetails = useTypedSelector(
+        state => state.audioPlayer.progressDetails
+    );
+
     // Play or pause the audio whenever isPlaying state changes
     useEffect(() => {
         if (audioRef.current) {
@@ -155,6 +175,7 @@ export const useAudioPlayer = () => {
     useEffect(() => {
         if (audioRef.current && currentTrack) {
             audioRef.current.src = currentTrack.src;
+            audioRef.current.load(); // Ensure the new track loads
             if (isPlaying) {
                 audioRef.current.play();
             }
@@ -213,6 +234,44 @@ export const useAudioPlayer = () => {
         [dispatch]
     );
 
+    // Handle time updates and dispatch to Redux
+    const handleTimeUpdate = useCallback(() => {
+        if (audioRef.current) {
+            const currentTime = audioRef.current.currentTime;
+            const totalDuration = audioRef.current.duration;
+            const progressLevel = totalDuration
+                ? (currentTime / totalDuration) * 100
+                : 0;
+
+            dispatch(
+                updateProgress({
+                    currentTime,
+                    totalDuration,
+                    progressLevel: Math.min(100, progressLevel), // Ensure it does not exceed 100
+                })
+            );
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        const audioElement = audioRef.current;
+
+        if (audioElement) {
+            audioElement.addEventListener('timeupdate', handleTimeUpdate);
+            audioElement.load();
+        }
+
+        return () => {
+            if (audioElement) {
+                audioElement.removeEventListener(
+                    'timeupdate',
+                    handleTimeUpdate
+                );
+                console.log('Event listener removed for timeupdate.');
+            }
+        };
+    }, [handleTimeUpdate]);
+
     return {
         playlist,
         shuffledPlaylist,
@@ -232,5 +291,6 @@ export const useAudioPlayer = () => {
         changeLoopMode,
         loopMode,
         isShuffling,
+        progressDetails,
     };
 };
