@@ -3,6 +3,7 @@ import PreviousButton from '../control-buttons/PreviousButton';
 import NextButton from '../control-buttons/NextButton';
 import LoopButton from '../control-buttons/LoopButton';
 import PlaybackButton from '../control-buttons/PlaybackButton';
+import ProgressBar from './progressbar';
 
 function TrackControls() {
     return (
@@ -14,7 +15,7 @@ function TrackControls() {
                 <NextButton />
                 <LoopButton />
             </div>
-            {/* <ProgressBar /> */}
+            <ProgressBar />
         </div>
     );
 }

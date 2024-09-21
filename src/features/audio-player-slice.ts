@@ -247,7 +247,7 @@ export const useAudioPlayer = () => {
                 updateProgress({
                     currentTime,
                     totalDuration,
-                    progressLevel: Math.min(100, progressLevel), // Ensure it does not exceed 100
+                    progressLevel: Math.min(100, progressLevel),
                 })
             );
         }
@@ -272,6 +272,27 @@ export const useAudioPlayer = () => {
         };
     }, [handleTimeUpdate]);
 
+    const updateTrackPosition = useCallback(
+        (newPosition: number) => {
+            console.log(audioRef, 'mom');
+            if (audioRef.current) {
+                const totalDuration = audioRef.current.duration;
+                const newTime = (newPosition / 100) * totalDuration;
+
+                audioRef.current.currentTime = newTime;
+
+                dispatch(
+                    updateProgress({
+                        currentTime: newTime,
+                        totalDuration: totalDuration,
+                        progressLevel: newPosition,
+                    })
+                );
+            }
+        },
+        [dispatch, audioRef]
+    );
+
     return {
         playlist,
         shuffledPlaylist,
@@ -292,5 +313,6 @@ export const useAudioPlayer = () => {
         loopMode,
         isShuffling,
         progressDetails,
+        updateTrackPosition,
     };
 };
