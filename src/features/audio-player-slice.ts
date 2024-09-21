@@ -14,16 +14,28 @@ interface Track {
 
 interface AudioPlayerState {
     trackList: Track[];
+    shuffledTrackList: Track[]; // New state for shuffled playlist
     currentTrack: Track | null;
     currentIdx: number;
     isPlaying: boolean;
+    isShuffling: boolean;
 }
 
 const audioPlayerInitState: AudioPlayerState = {
     trackList: [],
+    shuffledTrackList: [],
     currentTrack: null,
     currentIdx: 0,
     isPlaying: false,
+    isShuffling: false,
+};
+
+// Function to shuffle an array
+const shuffleArray = (array: Track[]): Track[] => {
+    return array
+        .map(value => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
 };
 
 const audioPlayerSlice = createSlice({
@@ -31,22 +43,27 @@ const audioPlayerSlice = createSlice({
     initialState: audioPlayerInitState,
     reducers: {
         setTrackList: (state, action: PayloadAction<Track[]>) => {
-            if (action.payload !== state.trackList) {
-                state.trackList = action.payload;
-                state.currentIdx = 0;
-                state.currentTrack = state.trackList[0] || null;
-            }
+            state.trackList = action.payload;
+            state.shuffledTrackList = [];
+            state.currentIdx = 0;
+            state.currentTrack = state.trackList[0] || null;
         },
         gotoNextTrack: state => {
-            if (state.currentIdx < state.trackList.length - 1) {
+            const playlist = state.isShuffling
+                ? state.shuffledTrackList
+                : state.trackList;
+            if (state.currentIdx < playlist.length - 1) {
                 state.currentIdx += 1;
-                state.currentTrack = state.trackList[state.currentIdx];
+                state.currentTrack = playlist[state.currentIdx];
             }
         },
         gotoPreviousTrack: state => {
+            const playlist = state.isShuffling
+                ? state.shuffledTrackList
+                : state.trackList;
             if (state.currentIdx > 0) {
                 state.currentIdx--;
-                state.currentTrack = state.trackList[state.currentIdx];
+                state.currentTrack = playlist[state.currentIdx];
             }
         },
         playTrack: state => {
@@ -54,6 +71,17 @@ const audioPlayerSlice = createSlice({
         },
         pauseTrack: state => {
             state.isPlaying = false;
+        },
+        activateShuffle: state => {
+            state.isShuffling = true;
+            state.shuffledTrackList = shuffleArray(state.trackList); // Shuffle the track list
+            state.currentIdx = 0; // Reset index to start from the beginning
+            state.currentTrack = state.shuffledTrackList[0]; // Set the first shuffled track
+        },
+        deactivateShuffle: state => {
+            state.isShuffling = false;
+            state.currentIdx = 0; // Reset index to original playlist
+            state.currentTrack = state.trackList[0]; // Set the first track from original playlist
         },
     },
 });
@@ -64,6 +92,8 @@ export const {
     setTrackList,
     playTrack,
     pauseTrack,
+    activateShuffle,
+    deactivateShuffle,
 } = audioPlayerSlice.actions;
 
 const audioPLayerReducer = audioPlayerSlice.reducer;
@@ -75,19 +105,23 @@ export const useAudioPlayer = () => {
     const dispatch = useDispatch();
 
     const playlist = useTypedSelector(state => state.audioPlayer.trackList);
-
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
+    const shuffledPlaylist = useTypedSelector(
+        state => state.audioPlayer.shuffledTrackList
+    );
     const currentTrack = useTypedSelector(
         state => state.audioPlayer.currentTrack
     );
-
     const currentIdx = useTypedSelector(state => state.audioPlayer.currentIdx);
-
     const isPlaying = useTypedSelector(state => state.audioPlayer.isPlaying);
+    const isShuffling = useTypedSelector(
+        state => state.audioPlayer.isShuffling
+    );
 
-    const isNextTrackAvailable = currentIdx < playlist.length - 1;
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    const isNextTrackAvailable =
+        currentIdx <
+        (isShuffling ? shuffledPlaylist.length : playlist.length) - 1;
     const isPreviousTrackAvailable = currentIdx > 0;
 
     // Play or pause the audio whenever isPlaying state changes
@@ -99,19 +133,39 @@ export const useAudioPlayer = () => {
                 audioRef.current.pause();
             }
         }
-    }, [isPlaying, currentTrack]);
+    }, [isPlaying]);
 
-    const playNextTrack = () => {
+    // Update the audio source whenever the current track changes
+    useEffect(() => {
+        if (audioRef.current && currentTrack) {
+            audioRef.current.src = currentTrack.src;
+            if (isPlaying) {
+                audioRef.current.play();
+            }
+        }
+    }, [currentTrack, isPlaying]);
+
+    // Cleanup the audio element when the component unmounts
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.src = '';
+            }
+        };
+    }, []);
+
+    const playNextTrack = useCallback(() => {
         if (isNextTrackAvailable) {
             dispatch(gotoNextTrack());
         }
-    };
+    }, [dispatch, isNextTrackAvailable]);
 
-    const playPreviousTrack = () => {
+    const playPreviousTrack = useCallback(() => {
         if (isPreviousTrackAvailable) {
             dispatch(gotoPreviousTrack());
         }
-    };
+    }, [dispatch, isPreviousTrackAvailable]);
 
     const setPlayList = useCallback(
         (tracks: Track[]) => {
@@ -120,16 +174,25 @@ export const useAudioPlayer = () => {
         [dispatch]
     );
 
-    const play = () => {
+    const play = useCallback(() => {
         dispatch(playTrack());
-    };
+    }, [dispatch]);
 
-    const pause = () => {
+    const pause = useCallback(() => {
         dispatch(pauseTrack());
-    };
+    }, [dispatch]);
+
+    const turnOnShuffle = useCallback(() => {
+        dispatch(activateShuffle());
+    }, [dispatch]);
+
+    const turnOffShuffle = useCallback(() => {
+        dispatch(deactivateShuffle());
+    }, [dispatch]);
 
     return {
         playlist,
+        shuffledPlaylist,
         currentTrack,
         currentIdx,
         playNextTrack,
@@ -141,5 +204,8 @@ export const useAudioPlayer = () => {
         audioRef,
         isNextTrackAvailable,
         isPreviousTrackAvailable,
+        turnOnShuffle,
+        turnOffShuffle,
+        isShuffling,
     };
 };
