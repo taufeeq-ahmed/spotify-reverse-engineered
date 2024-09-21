@@ -14,11 +14,12 @@ interface Track {
 
 interface AudioPlayerState {
     trackList: Track[];
-    shuffledTrackList: Track[]; // New state for shuffled playlist
+    shuffledTrackList: Track[];
     currentTrack: Track | null;
     currentIdx: number;
     isPlaying: boolean;
     isShuffling: boolean;
+    loopMode: 'off' | 'track' | 'playlist'; // New loop mode state
 }
 
 const audioPlayerInitState: AudioPlayerState = {
@@ -28,6 +29,7 @@ const audioPlayerInitState: AudioPlayerState = {
     currentIdx: 0,
     isPlaying: false,
     isShuffling: false,
+    loopMode: 'off', // Initialize loop mode as 'off'
 };
 
 // Function to shuffle an array
@@ -52,9 +54,13 @@ const audioPlayerSlice = createSlice({
             const playlist = state.isShuffling
                 ? state.shuffledTrackList
                 : state.trackList;
+
             if (state.currentIdx < playlist.length - 1) {
                 state.currentIdx += 1;
                 state.currentTrack = playlist[state.currentIdx];
+            } else if (state.loopMode === 'playlist') {
+                state.currentIdx = 0;
+                state.currentTrack = playlist[0];
             }
         },
         gotoPreviousTrack: state => {
@@ -74,14 +80,20 @@ const audioPlayerSlice = createSlice({
         },
         activateShuffle: state => {
             state.isShuffling = true;
-            state.shuffledTrackList = shuffleArray(state.trackList); // Shuffle the track list
-            state.currentIdx = 0; // Reset index to start from the beginning
-            state.currentTrack = state.shuffledTrackList[0]; // Set the first shuffled track
+            state.shuffledTrackList = shuffleArray(state.trackList);
+            state.currentIdx = 0;
+            state.currentTrack = state.shuffledTrackList[0];
         },
         deactivateShuffle: state => {
             state.isShuffling = false;
-            state.currentIdx = 0; // Reset index to original playlist
-            state.currentTrack = state.trackList[0]; // Set the first track from original playlist
+            state.currentIdx = 0;
+            state.currentTrack = state.trackList[0];
+        },
+        setLoopMode: (
+            state,
+            action: PayloadAction<'off' | 'track' | 'playlist'>
+        ) => {
+            state.loopMode = action.payload;
         },
     },
 });
@@ -94,13 +106,14 @@ export const {
     pauseTrack,
     activateShuffle,
     deactivateShuffle,
+    setLoopMode,
 } = audioPlayerSlice.actions;
 
 const audioPLayerReducer = audioPlayerSlice.reducer;
 
 export default audioPLayerReducer;
 
-// custom hook to interact with audioPlayerState
+// Custom hook to interact with audioPlayerState
 export const useAudioPlayer = () => {
     const dispatch = useDispatch();
 
@@ -116,13 +129,16 @@ export const useAudioPlayer = () => {
     const isShuffling = useTypedSelector(
         state => state.audioPlayer.isShuffling
     );
+    const loopMode = useTypedSelector(state => state.audioPlayer.loopMode); // Loop mode
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const isNextTrackAvailable =
+        loopMode === 'playlist' ||
         currentIdx <
-        (isShuffling ? shuffledPlaylist.length : playlist.length) - 1;
-    const isPreviousTrackAvailable = currentIdx > 0;
+            (isShuffling ? shuffledPlaylist.length : playlist.length) - 1;
+
+    const isPreviousTrackAvailable = loopMode === 'playlist' || currentIdx > 0;
 
     // Play or pause the audio whenever isPlaying state changes
     useEffect(() => {
@@ -190,6 +206,13 @@ export const useAudioPlayer = () => {
         dispatch(deactivateShuffle());
     }, [dispatch]);
 
+    const changeLoopMode = useCallback(
+        (mode: 'off' | 'track' | 'playlist') => {
+            dispatch(setLoopMode(mode));
+        },
+        [dispatch]
+    );
+
     return {
         playlist,
         shuffledPlaylist,
@@ -206,6 +229,8 @@ export const useAudioPlayer = () => {
         isPreviousTrackAvailable,
         turnOnShuffle,
         turnOffShuffle,
+        changeLoopMode,
+        loopMode,
         isShuffling,
     };
 };
