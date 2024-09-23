@@ -8,16 +8,18 @@ const formatTime = (timeInSeconds: number): string => {
 };
 
 function ProgressBar() {
-    const { progressDetails, updateTrackPosition } = useAudioPlayer();
+    const { progressDetails } = useAudioPlayer();
     const { currentTime, progressLevel, totalDuration } = progressDetails;
 
     const handleSliderChange = (value: number[]) => {
-        updateTrackPosition(value[0]);
+        // later
     };
 
     return (
         <div className="progress-bar flex gap-4 items-center">
-            <div className="text-xs opacity-75">{formatTime(currentTime)}</div>
+            <div className="text-xs opacity-75">
+                {currentTime && formatTime(currentTime)}
+            </div>
             <Slider
                 value={[progressLevel]}
                 max={100}
@@ -25,7 +27,7 @@ function ProgressBar() {
                 onValueChange={handleSliderChange}
             />
             <div className="text-xs opacity-75">
-                {formatTime(totalDuration)}
+                {totalDuration && formatTime(totalDuration)}
             </div>
         </div>
     );

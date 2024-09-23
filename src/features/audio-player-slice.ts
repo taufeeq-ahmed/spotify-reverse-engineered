@@ -204,6 +204,42 @@ export const useAudioPlayer = () => {
         }
     }, [dispatch, isPreviousTrackAvailable]);
 
+    const updateAudioProgress = useCallback(() => {
+        if (audioRef.current) {
+            const currentTime = audioRef.current.currentTime;
+            const totalDuration = audioRef.current.duration;
+            const progressLevel = totalDuration
+                ? (currentTime / totalDuration) * 100
+                : 0;
+
+            dispatch(
+                updateProgress({
+                    currentTime,
+                    totalDuration,
+                    progressLevel: Math.min(100, progressLevel),
+                })
+            );
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.addEventListener(
+                'loadedmetadata',
+                updateAudioProgress
+            );
+        }
+
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.removeEventListener(
+                    'loadedmetadata',
+                    updateAudioProgress
+                );
+            }
+        };
+    }, [audioRef, dispatch, updateAudioProgress]);
+
     const setPlayList = useCallback(
         (tracks: Track[]) => {
             dispatch(setTrackList(tracks));
@@ -272,27 +308,6 @@ export const useAudioPlayer = () => {
         };
     }, [handleTimeUpdate]);
 
-    const updateTrackPosition = useCallback(
-        (newPosition: number) => {
-            console.log(audioRef, 'mom');
-            if (audioRef.current) {
-                const totalDuration = audioRef.current.duration;
-                const newTime = (newPosition / 100) * totalDuration;
-
-                audioRef.current.currentTime = newTime;
-
-                dispatch(
-                    updateProgress({
-                        currentTime: newTime,
-                        totalDuration: totalDuration,
-                        progressLevel: newPosition,
-                    })
-                );
-            }
-        },
-        [dispatch, audioRef]
-    );
-
     return {
         playlist,
         shuffledPlaylist,
@@ -313,6 +328,5 @@ export const useAudioPlayer = () => {
         loopMode,
         isShuffling,
         progressDetails,
-        updateTrackPosition,
     };
 };
