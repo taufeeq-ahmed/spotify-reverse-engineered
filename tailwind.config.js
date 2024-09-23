@@ -71,7 +71,18 @@ const tailwindConfig = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+
+		function ({ addUtilities }) {
+			const newUtilities = {
+				'.test-border': {
+				'border': '1px solid red',
+				},
+			}
+			addUtilities(newUtilities)
+		},
+  ],
 }
 
 export default tailwindConfig
