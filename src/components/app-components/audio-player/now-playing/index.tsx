@@ -8,7 +8,7 @@ function NowPlaying() {
             <img
                 src={currentTrack?.thumbnail}
                 alt="now-playing"
-                className="thumbnail h-[56px] w-[56px] rounded-sm"
+                className="thumbnail w-[56px] rounded-sm aspect-square object-cover"
             />
             <div className="details">
                 <p className="text-sm">{currentTrack?.title}</p>

@@ -18,14 +18,14 @@ function App() {
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel
                     className="h-full p-2"
-                    defaultSize={30}
+                    defaultSize={25}
                     minSize={20}
                     maxSize={35}
                 >
                     <UserLibrary />
                 </ResizablePanel>
                 <ResizableHandle className="bg-[#1f1f1f] opacity-0 " />
-                <ResizablePanel className="h-full p-2" defaultSize={70}>
+                <ResizablePanel className="h-full p-2" defaultSize={75}>
                     <ContentCatalog />
                 </ResizablePanel>
             </ResizablePanelGroup>

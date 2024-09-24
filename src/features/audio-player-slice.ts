@@ -2,15 +2,9 @@ import { useSelector, useDispatch, TypedUseSelectorHook } from 'react-redux';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '@/store/index';
 import { useCallback, useEffect, useRef } from 'react';
+import { Track } from '@/types';
 
 const useTypedSelector: TypedUseSelectorHook<RootState> = useSelector;
-
-interface Track {
-    title: string;
-    thumbnail?: string;
-    src: string;
-    artist: string;
-}
 
 interface ProgressDetails {
     currentTime: number; // current play time in seconds
